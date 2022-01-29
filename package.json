@@ -1,0 +1,33 @@
+{
+  "name": "lemholder",
+  "version": "1.0.0",
+  "description": "A template for kick starting a Cloudflare Workers + Emscripten + Wasm project",
+  "module": "./dist/index.mjs",
+  "scripts": {
+    "build": "rollup -c",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write '**/*.{js,css,json,md}'"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "semi": false,
+    "tabWidth": 2,
+    "trailingComma": "all",
+    "printWidth": 80
+  },
+  "author": "Francois Lecroart <peernohell@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "opentype.js": "^1.3.3",
+    "pngjs": "^6.0.0",
+    "pureimage": "^0.3.5"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.1.0",
+    "prettier": "^1.19.1",
+    "rollup": "^2.36.1",
+    "rollup-plugin-copy": "^3.3.0",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}
