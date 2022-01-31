@@ -1,7 +1,7 @@
 import * as PImage from 'pureimage/src/';
 import {fromBytesBigEndian, getBytesBigEndian} from 'pureimage/src/uint32.js'
 import opentype from 'opentype.js';
-import {PNG} from "pngjs/browser";
+import {PNG } from "pngjs/browser";
 import fontBuffer1 from 'font.ttf';
 import fontBuffer2 from 'Gilland-Regular.otf';
 import fontBuffer3 from 'Arturito Slab.ttf';
@@ -10,6 +10,9 @@ import fontBuffer3 from 'Arturito Slab.ttf';
 //   event.respondWith(handleRequest(event))
 // })
 
+
+// TODO:
+// - check https://github.com/Zubnix/skia-wasm-port to use instead of pureimage
 
 export default {
   async fetch(request, env) {
@@ -30,9 +33,10 @@ export default {
 }
 
 const generateImage = () => {
-  var img = PImage.make(500,50);
+  const bitmap = PImage.make(500,50);
   console.log('generateImage: start');
-  var ctx = img.getContext('2d');
+
+  const ctx = bitmap.getContext('2d');
   console.log('generateImage: ctx created');
 
   ctx.fillStyle = '#AAAAAA';
@@ -44,7 +48,7 @@ const generateImage = () => {
   ctx.fillText('hello world', 40, 40);
   console.log('generateImage: ctx.fillText done');
 
-  return img;
+  return bitmap;
 }
 
 const fn5 = () => {
@@ -68,7 +72,6 @@ const fn5 = () => {
 
 
 const handleRequest = async (req, env, writable) => {
-
   // special font loading
   const url = new URL(req.url);
  const accept = req.headers.get('accept');
@@ -76,10 +79,62 @@ const handleRequest = async (req, env, writable) => {
  
    // Proxy the font file requests
    return proxyRequest('https:/' + url.pathname, req);
- 
- }
+}
 
 
+ // stream from png.pipe to worker writer stream
+class Writer extends EventTarget {
+  constructor() {
+    super();
+    const writer = writable.getWriter()
+    console.log('constructor', writer);
+    this.writer = writer;
+  }
+  emit(event, data) {
+    this.dispatchEvent(new Event(event));
+
+    // TODO only on pipe
+    data.on('data', this.onData.bind(this));
+    data.on('end', this.onEnd.bind(this));
+  }
+  onData(chunk) {
+    this.writer.write(chunk, 'binary');
+  }
+  onEnd() {
+    this.writer.close();
+  }
+  end() { /* needed but writer.close must be called later. */ }
+  on(evt, cb) { this.addEventListener(evt, cb); }
+  removeListener(evt, cb) { this.removeEventListener(evt, cb); }
+}
+
+const bitmapToPNG = (bitmap, writable) => {
+  const png = new PNG({
+    width: bitmap.width,
+    height: bitmap.height
+  })
+
+  for(let i=0; i<bitmap.width; i++) {
+    for(let j=0; j<bitmap.height; j++) {
+        const rgba = bitmap.getPixelRGBA(i, j)
+        
+        const n = (j * bitmap.width + i) * 4
+        const bytes = getBytesBigEndian(rgba)
+        if (!i && !j) console.log('rgba', rgba, n, bytes);
+
+        for(let k=0; k<4; k++) {
+            png.data[n+k] = bytes[k];
+            // data[n+k] = bytes[k];
+        }
+    }
+  }
+
+  png.pack()
+  // png._packer.on('data', chunk => { writer.write(chunk, 'binary'); });
+  // png._packer.on('end', () => writer.close());
+  png.on('error', err => { console.error('png.error', err.message, err.stack); })
+  png.pipe(writable)
+}
 
   // render the image
 
@@ -107,57 +162,16 @@ const handleRequest = async (req, env, writable) => {
       fnt.font = font;
       fnt.loaded = true;
 
-      const img = generateImage();
-      // console.log('starting encodingPNG ...', img.width, img.height, { pixel: img.getPixelRGBA(0,0), isFFFF: img.getPixelRGBA(0,0) === 0xffffffff, data: img.data });
-      // await PImage.encodePNGToStream(img, writable);
-    // return img.data;
-      const png = new PNG({
-        width: img.width,
-        height: img.height
-      })
+      const bitmap = generateImage();
+      // convert bitmap to png stream
 
-      // png.data.pipe(writable);
-      // const data = new Uint8ClampedArray(img.width*img.height*4);
-
-      for(let i=0; i<img.width; i++) {
-        for(let j=0; j<img.height; j++) {
-            const rgba = img.getPixelRGBA(i, j)
-            
-            const n = (j * img.width + i) * 4
-            const bytes = getBytesBigEndian(rgba)
-            if (!i && !j) console.log('rgba', rgba, n, bytes);
-
-            for(let k=0; k<4; k++) {
-                png.data[n+k] = bytes[k];
-                // data[n+k] = bytes[k];
-            }
-        }
+      try {
+        // await bitmapToPNG(bitmap, new Writer());
+        await PImage.encodePNGToStream(bitmap, new Writer())
+      } catch (err) {
+        console.error('bitmapToPNG', err.message, err.stack);
       }
 
-      const writer = writable.getWriter()
-      // writer.write(png.pack(), 'binary');
-      // console.log('encodingPNG ok');
-      // writer.close();
-      // return png.pack().pipe(writer);
-      // return data;
-      // return img;
-      // resolve(img);
-
-      // for await (const chunk of Readable.from(png.pack())) {
-      //   writer.write(chunk, 'binary');
-      // }
-
-      // writer.close();
-      // png.pack().pipe({
-      //   on(data) {
-      //     console.log('on', data);
-      //     writer.write(data, 'binary');
-      //   }
-      // });
-      png._packer.on('data', chunk => { writer.write(chunk, 'binary'); });
-      png._packer.on('end', () => writer.close());
-      png.pack()
-      // await readableToString(png, writer);
       console.log('encodingPNG ok');
 
 
