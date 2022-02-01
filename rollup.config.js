@@ -14,13 +14,13 @@ export default {
     file: 'dist/index.mjs',
     sourcemap: true,
   },
-  external: ['./font.ttf', './Gilland-Regular.otf', './Arturito Slab.ttf'],
+  external: ['./font.ttf', './Gilland-Regular.otf', './Arturito Slab.ttf', './SourceSansPro-Regular.ttf'],
   plugins: [
     commonjs(),
     nodeResolve({ browser: true }),
     terser(),
     copy({
-      targets: [{ src: './src/font.ttf', dest: './dist/' }, { src: './src/Gilland-Regular.otf', dest: './dist/' }, { src: './src/Arturito Slab.ttf', dest: './dist/' }],
+      targets: [{ src: './src/font.ttf', dest: './dist/' }, { src: './src/Gilland-Regular.otf', dest: './dist/' }, { src: './src/Arturito Slab.ttf', dest: './dist/' }, { src: './src/SourceSansPro-Regular.ttf', dest: './dist/' }],
     }),
   ],
 }

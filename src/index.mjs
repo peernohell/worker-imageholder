@@ -1,18 +1,6 @@
 import * as PImage from 'pureimage/src/';
-import {fromBytesBigEndian, getBytesBigEndian} from 'pureimage/src/uint32.js'
 import opentype from 'opentype.js';
-import {PNG } from "pngjs/browser";
-import fontBuffer1 from 'font.ttf';
-import fontBuffer2 from 'Gilland-Regular.otf';
-import fontBuffer3 from 'Arturito Slab.ttf';
-// Gilland-Regular
-// addEventListener('fetch', event => {
-//   event.respondWith(handleRequest(event))
-// })
-
-
-// TODO:
-// - check https://github.com/Zubnix/skia-wasm-port to use instead of pureimage
+import fontBuffer from 'SourceSansPro-Regular.ttf';
 
 export default {
   async fetch(request, env) {
@@ -39,13 +27,10 @@ const generateImage = () => {
   const ctx = bitmap.getContext('2d');
   console.log('generateImage: ctx created');
 
-  ctx.fillStyle = '#AAAAAA';
-  ctx.fillRect(0,0,500,50);
+  ctx.fillRect(0,0,500,100);
   ctx.fillStyle = '#FF3333';
-  ctx.font = "18px 'Roboto'";
-  console.log('generateImage: ctx.font set');
-  
-  ctx.fillText('hello world', 40, 40);
+  ctx.font = "60pt 'Roboto'";
+  ctx.fillText('hello world', 50, 80);
   console.log('generateImage: ctx.fillText done');
 
   return bitmap;
@@ -69,112 +54,56 @@ const fn5 = () => {
   return img;
 };
 
-
-
-const handleRequest = async (req, env, writable) => {
-  // special font loading
-  const url = new URL(req.url);
- const accept = req.headers.get('accept');
- if (req.method === 'GET' && url.pathname.startsWith('/fonts.gstatic.com/')) {
- 
-   // Proxy the font file requests
-   return proxyRequest('https:/' + url.pathname, req);
-}
-
-
- // stream from png.pipe to worker writer stream
 class Writer extends EventTarget {
-  constructor() {
+  constructor(writer) {
     super();
-    const writer = writable.getWriter()
-    console.log('constructor', writer);
     this.writer = writer;
   }
   emit(event, data) {
     this.dispatchEvent(new Event(event));
 
     // TODO only on pipe
-    data.on('data', this.onData.bind(this));
-    data.on('end', this.onEnd.bind(this));
+    if (event === 'pipe') {
+      data.on('data', this.onData.bind(this));
+      data.on('end', this.onEnd.bind(this));
+    }
   }
   onData(chunk) {
     this.writer.write(chunk, 'binary');
   }
   onEnd() {
+    console.log('writer.close');
+    this.emit('finish');
     this.writer.close();
   }
   end() { /* needed but writer.close must be called later. */ }
-  on(evt, cb) { this.addEventListener(evt, cb); }
+  on(evt, cb) { this.addEventListener(evt, cb); return this; }
   removeListener(evt, cb) { this.removeEventListener(evt, cb); }
 }
 
-const bitmapToPNG = (bitmap, writable) => {
-  const png = new PNG({
-    width: bitmap.width,
-    height: bitmap.height
-  })
-
-  for(let i=0; i<bitmap.width; i++) {
-    for(let j=0; j<bitmap.height; j++) {
-        const rgba = bitmap.getPixelRGBA(i, j)
-        
-        const n = (j * bitmap.width + i) * 4
-        const bytes = getBytesBigEndian(rgba)
-        if (!i && !j) console.log('rgba', rgba, n, bytes);
-
-        for(let k=0; k<4; k++) {
-            png.data[n+k] = bytes[k];
-            // data[n+k] = bytes[k];
-        }
-    }
+const handleRequest = async (req, env, writable) => {
+  // special font loading
+  const url = new URL(req.url);
+  const accept = req.headers.get('accept');
+  if (req.method === 'GET' && url.pathname.startsWith('/fonts.gstatic.com/')) {
+    // Proxy the font file requests
+    return proxyRequest('https:/' + url.pathname, req);
   }
-
-  png.pack()
-  // png._packer.on('data', chunk => { writer.write(chunk, 'binary'); });
-  // png._packer.on('end', () => writer.close());
-  png.on('error', err => { console.error('png.error', err.message, err.stack); })
-  png.pipe(writable)
-}
-
-  // render the image
 
   //var fnt = PImage.registerFont('/Users/peernohell/lempire/lemlist/app/public/fonts/bilbo.ttf','Source Sans Pro');
   var fnt = PImage.registerFont('https://mdn.mozillademos.org/files/2468/VeraSeBd.ttf','Roboto');
   console.log('handleRequest ...');
-  // return new Promise(async (resolve, reject) => {
-      // console.log('opentype ', err, font);
-      // if (err) {
-      //   console.log(err);
-      //   res.end('failed' + err.message);
-      //   reject(err);
-      //   return;
-      // }
 
-      // const response = slug; // await fetch('https://mdn.mozillademos.org/files/2468/VeraSeBd.ttf');
-      // const response = slug2; // await fetch('https://mdn.mozillademos.org/files/2468/VeraSeBd.ttf');
-      console.log('handleRequest fetch ok');
-      const font = await opentype.parse(fontBuffer3); // await response.arrayBuffer());
+  const font = await opentype.parse(fontBuffer); // await response.arrayBuffer());
+  fnt.font = font;
+  fnt.loaded = true;
 
-      // const font = await opentype.load('https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2');
+  const bitmap = generateImage();
+  // convert bitmap to png stream
 
-      console.log('opentype ', font, {fontKeys: Object.keys(font) });
+  // await bitmapToPNG(bitmap, new Writer());
+  await PImage.encodePNGToStream(bitmap, new Writer(writable.getWriter())) // throw an error but works.
+  await PImage.encodeJPEGToStream(bitmap, new Writer(writable.getWriter())) // throw an error but works.
 
-      fnt.font = font;
-      fnt.loaded = true;
-
-      const bitmap = generateImage();
-      // convert bitmap to png stream
-
-      try {
-        // await bitmapToPNG(bitmap, new Writer());
-        await PImage.encodePNGToStream(bitmap, new Writer())
-      } catch (err) {
-        console.error('bitmapToPNG', err.message, err.stack);
-      }
-
-      console.log('encodingPNG ok');
-
-
-    // });
-  // });
+  console.log('encodingPNG ok');
 };
