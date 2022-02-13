@@ -21,7 +21,7 @@ export default {
 }
 
 const generateImage = () => {
-  const bitmap = PImage.make(500,50);
+  const bitmap = PImage.make(500,80);
   console.log('generateImage: start');
 
   const ctx = bitmap.getContext('2d');
@@ -103,7 +103,7 @@ const handleRequest = async (req, env, writable) => {
 
   // await bitmapToPNG(bitmap, new Writer());
   await PImage.encodePNGToStream(bitmap, new Writer(writable.getWriter())) // throw an error but works.
-  await PImage.encodeJPEGToStream(bitmap, new Writer(writable.getWriter())) // throw an error but works.
+  // await PImage.encodeJPEGToStream(bitmap, new Writer(writable.getWriter())) // throw an error but works.
 
   console.log('encodingPNG ok');
 };
