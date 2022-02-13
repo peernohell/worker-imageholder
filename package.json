@@ -19,7 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "opentype.js": "^1.3.3",
-    "pureimage": "^0.3.8"
+    "pureimage": "file:../node-pureimage"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
