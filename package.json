@@ -18,9 +18,7 @@
   "author": "Francois Lecroart <peernohell@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "npm-check-updates": "^12.3.0",
     "opentype.js": "^1.3.3",
-    "pngjs": "^6.0.0",
     "pureimage": "^0.3.8"
   },
   "devDependencies": {
