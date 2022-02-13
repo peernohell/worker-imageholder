@@ -10,4 +10,5 @@ $ wrangler dev
 ```
 
 # TODO
-* make node_modules dependency work again (I just removed node_modules and forgot that I have intensively clean the code to make it work)
+* make node_modules dependency work again
+* fix pureimage-js that is in node_modules to works with cloudlfare workers (import png/browser + replace Buffer.concat)
