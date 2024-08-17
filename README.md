@@ -6,7 +6,7 @@ It use rollup to build.
 
 To build use the following command
 ```console
-$ wrangler dev
+$ npx wrangler dev
 ```
 
 # TODO

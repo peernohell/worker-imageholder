@@ -1,6 +1,6 @@
-import * as PImage from 'pureimage/src/';
+import * as PImage from 'pureimage';
 import opentype from 'opentype.js';
-import fontBuffer from 'SourceSansPro-Regular.ttf';
+import fontBuffer from './SourceSansPro-Regular.ttf';
 
 export default {
   async fetch(request, env) {
