@@ -1,9 +1,9 @@
 name = "lemholder"
 account_id = "5bcbe073561611052ae8358559c2709c"
 workers_dev = true
-compatibility_date = "2022-01-31"
+compatibility_flags = [ "nodejs_compat" ]
+compatibility_date = "2024-09-23"
 main = "./dist/index.mjs"
-node_compat = true
 
 [build]
 command = "npm install && npm run build"

@@ -1,9 +1,17 @@
-import * as PImage from 'pureimage';
+import * as PImage from 'pureimage/dist/index.esm.js';
 import opentype from 'opentype.js';
-import fontBuffer from './SourceSansPro-Regular.ttf';
+// import fontBuffer from './Gilland-Regular.otf';
+import fontBuffer from './Manrope-Regular.otf';
+// import fontBuffer from './Roboto-Regular.ttf';
+// import fontBuffer from './Roboto-Regular.ttf';
+import { generateImage, generateO, example1, example2 } from './draw.mjs';
 
+const gen = generateImage;
+
+console.log('starting...');
 export default {
   async fetch(request, env) {
+    console.log('fetch ...');
     try {
       let { readable, writable } = new TransformStream();
       const response = await handleRequest(request, env, writable);
@@ -19,40 +27,6 @@ export default {
     }
   },
 }
-
-const generateImage = () => {
-  const bitmap = PImage.make(500,80);
-  console.log('generateImage: start');
-
-  const ctx = bitmap.getContext('2d');
-  console.log('generateImage: ctx created');
-
-  ctx.fillRect(0,0,500,100);
-  ctx.fillStyle = '#FF3333';
-  ctx.font = "60pt 'Roboto'";
-  ctx.fillText('hello world', 50, 80);
-  console.log('generateImage: ctx.fillText done');
-
-  return bitmap;
-}
-
-const fn5 = () => {
-  var img = PImage.make(150,150);
-  var ctx = img.getContext('2d');
-
-  ctx.fillStyle = '#FF0000';
-  ctx.beginPath();
-  ctx.arc(75, 75, 50, 0, Math.PI * 2, true); // Outer circle
-  ctx.moveTo(110, 75);
-  ctx.arc(75, 75, 35, 0, Math.PI, false); // Mouth (clockwise)
-  ctx.moveTo(65, 65);
-  ctx.arc(60, 65, 5, 0, Math.PI * 2, true); // Left eye
-  ctx.moveTo(95, 65);
-  ctx.arc(90, 65, 5, 0, Math.PI * 2, true); // Right eye
-  ctx.stroke();
-
-  return img;
-};
 
 class Writer extends EventTarget {
   constructor(writer) {
@@ -79,9 +53,11 @@ class Writer extends EventTarget {
   end() { /* needed but writer.close must be called later. */ }
   on(evt, cb) { this.addEventListener(evt, cb); return this; }
   removeListener(evt, cb) { this.removeEventListener(evt, cb); }
+  prependListener(evt, cb) { this.addEventListener(evt, cb); }
 }
 
 const handleRequest = async (req, env, writable) => {
+  console.log('handleRequest ...');
   // special font loading
   const url = new URL(req.url);
   const accept = req.headers.get('accept');
@@ -90,15 +66,16 @@ const handleRequest = async (req, env, writable) => {
     return proxyRequest('https:/' + url.pathname, req);
   }
 
-  //var fnt = PImage.registerFont('/Users/peernohell/lempire/lemlist/app/public/fonts/bilbo.ttf','Source Sans Pro');
-  var fnt = PImage.registerFont('https://mdn.mozillademos.org/files/2468/VeraSeBd.ttf','Roboto');
+  var fnt = PImage.registerFont('','Roboto');
+  // var fnt = PImage.registerFont('https://mdn.mozillademos.org/files/2468/VeraSeBd.ttf','Roboto');
   console.log('handleRequest ...');
 
   const font = await opentype.parse(fontBuffer); // await response.arrayBuffer());
   fnt.font = font;
   fnt.loaded = true;
 
-  const bitmap = generateImage();
+
+  const bitmap = gen();
   // convert bitmap to png stream
 
   // await bitmapToPNG(bitmap, new Writer());
